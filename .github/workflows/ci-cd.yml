@@ -27,7 +27,6 @@ jobs:
           context: .
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/mlops_iris:${{ steps.vars.outputs.TAG }}
-                ${{ secrets.DOCKERHUB_USERNAME }}/mlops_iris:latest
 
   deploy:
     needs: build-and-push
