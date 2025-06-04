@@ -1,4 +1,4 @@
-name: CI‑CD Docker
+name: CI-CD Docker
 
 on:
   push:
@@ -26,7 +26,9 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/mlops_iris:${{ steps.vars.outputs.TAG }}
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/mlops_iris:${{ steps.vars.outputs.TAG }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/mlops_iris:latest
 
   deploy:
     needs: build-and-push
@@ -34,16 +36,13 @@ jobs:
     steps:
       - name: Pull & restart on VM
         uses: appleboy/ssh-action@v1
-        
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           script: |
-            sudo usermod -aG docker ${SSH_USER}
-            newgrp docker || true 
             cd /home/azureuser/mlops_iris
             sudo docker-compose down
             sudo docker-compose pull
-            sudi docker image prune -f
+            sudo docker image prune -f
             sudo docker-compose up -d
