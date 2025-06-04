@@ -81,7 +81,7 @@ def confusion_matrix():
 @app.post("/train")
 def train(req: TrainRequest):
     run_id = str(uuid.uuid4())[:8]
-    cmd = ["python", "train.py", "--model", req.model]
+    cmd = ["python", "model/train.py", "--model", req.model]
 
     if req.model == "random_forest" and req.n_estimators:
         cmd += ["--n_estimators", str(req.n_estimators)]
