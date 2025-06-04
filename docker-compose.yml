@@ -76,15 +76,18 @@ services:
       - "3000:3000"
     depends_on:
       - prometheus
-
-
+    environment:
+    - GF_SECURITY_ADMIN_USER=admin
+    - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+    - grafana_data:/var/lib/grafana
   # ---------- pgAdmin ----------
   pgadmin:
     image: dpage/pgadmin4
     restart: unless-stopped
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@admin.com
-      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_DEFAULT_PASSWORD: admin123
     ports:
       - "8080:80"
     volumes:
@@ -105,3 +108,4 @@ volumes:
   postgres_data:
   pgadmin_data:
   portainer_data:
+  grafana_data:
