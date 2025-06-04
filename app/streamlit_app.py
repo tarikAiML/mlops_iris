@@ -52,13 +52,26 @@ with tab_predict:
 
     if st.button("🔎 Prédire"):
         features = [sepal_length, sepal_width, petal_length, petal_width]
-        try:
-            model = joblib.load("app/model.joblib")
-            prediction = model.predict([features])[0]
-            classes = ["Setosa", "Versicolor", "Virginica"]
-            st.success(f"🌺 Prédit : **{classes[prediction]}** (classe {prediction})")
-        except FileNotFoundError:
-            st.error("Modèle introuvable. Lancez un entraînement d'abord.")
+        #try:
+            #model = joblib.load("app/model.joblib")
+            #prediction = model.predict([features])[0]
+            #classes = ["Setosa", "Versicolor", "Virginica"]
+            #st.success(f"🌺 Prédit : **{classes[prediction]}** (classe {prediction})")
+        #except FileNotFoundError:
+            #st.error("Modèle introuvable. Lancez un entraînement d'abord.")
+        res = requests.post(f"{API_URL}/predict", json={
+            "sepal_length": sepal_length,
+            "sepal_width": sepal_width,
+            "petal_length": petal_length,
+            "petal_width": petal_width,
+        })
+
+        if res.status_code == 200:
+            prediction = res.json()["prediction"]
+            species = res.json()["species"]
+            st.success(f"🌺 Prédit : **{species}** (classe {prediction})")
+        else:
+            st.error(res.json().get("error", "Erreur inconnue lors de la prédiction."))
 
     if os.path.exists("confusion_matrix.png"):
         st.image("confusion_matrix.png", caption="Confusion Matrix", use_column_width=True)

@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import subprocess, uuid, os
 from typing import Optional
@@ -15,6 +16,12 @@ instrumentator.instrument(app).expose(app)
 @app.get("/")
 async def root():
     return {"message": "Hello Iris MLOps!"}
+@app.get("/confusion_matrix")
+def get_confusion_matrix():
+    path = "confusion_matrix.png"
+    if os.path.exists(path):
+        return FileResponse(path, media_type="image/png")
+    return {"error": "Matrice non disponible"}
 
 class TrainRequest(BaseModel):
     model: str       # RandomForest | LogisticRegression | Knn
