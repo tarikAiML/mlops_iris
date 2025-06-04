@@ -1,0 +1,50 @@
+name: CI‑CD Docker
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      - name: Set image tag
+        id: vars
+        run: echo "TAG=${GITHUB_SHA::8}" >> $GITHUB_OUTPUT
+
+      - name: Build & push image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/mlops_iris:${{ steps.vars.outputs.TAG }}
+                ${{ secrets.DOCKERHUB_USERNAME }}/mlops_iris:latest
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Pull & restart on VM
+        uses: appleboy/ssh-action@v1
+        
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            sudo usermod -aG docker ${SSH_USER}
+            newgrp docker || true 
+            cd /home/azureuser/mlops_iris
+            sudo docker-compose down
+            sudo docker-compose pull
+            sudi docker image prune -f
+            sudo docker-compose up -d

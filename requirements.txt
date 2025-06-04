@@ -1,0 +1,11 @@
+scikit-learn
+pandas
+numpy
+matplotlib
+mlflow
+uvicorn
+fastapi
+streamlit
+psycopg2-binary
+joblib
+prometheus-fastapi-instrumentator
