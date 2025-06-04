@@ -73,5 +73,10 @@ with tab_predict:
         else:
             st.error(res.json().get("error", "Erreur inconnue lors de la prédiction."))
 
-    if os.path.exists("confusion_matrix.png"):
-        st.image("confusion_matrix.png", caption="Confusion Matrix", use_column_width=True)
+    #if os.path.exists("confusion_matrix.png"):
+        #st.image("confusion_matrix.png", caption="Confusion Matrix", use_column_width=True)
+    res = requests.get(f"{API_URL}/confusion_matrix")
+    if res.status_code == 200:
+        st.image(res.content, caption="Matrice de confusion", use_column_width=True)
+    else:
+        st.info("Matrice de confusion non disponible pour l'instant.")

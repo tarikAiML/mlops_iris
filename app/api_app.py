@@ -1,70 +1,110 @@
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
-import subprocess, uuid, os
-from typing import Optional
-import numpy as np
-import joblib
 from prometheus_fastapi_instrumentator import Instrumentator
+
+import os, subprocess, uuid
+import numpy as np
+import mlflow
+import mlflow.sklearn
+from typing import Optional
 
 app = FastAPI(title="IRIS API")
 
-# Instrumentation Prometheus
-instrumentator = Instrumentator()
-instrumentator.instrument(app).expose(app)
+# Prometheus
+Instrumentator().instrument(app).expose(app)
 
-@app.get("/")
-async def root():
-    return {"message": "Hello Iris MLOps!"}
-@app.get("/confusion_matrix")
-def get_confusion_matrix():
-    path = "confusion_matrix.png"
-    if os.path.exists(path):
-        return FileResponse(path, media_type="image/png")
-    return {"error": "Matrice non disponible"}
+# Variables globales
+_cached_model = None
 
-class TrainRequest(BaseModel):
-    model: str       # RandomForest | LogisticRegression | Knn
-    n_estimators: int  | None = None   # ignoré hors RandomForest
-    n_neighbors: int | None = None   # ignoré hors KNN
 
-@app.post("/train")
-def train(req: TrainRequest):
-    """Lance un entraînement MLflow en sous‑processus."""
-    run_id = str(uuid.uuid4())[:8]
-    cmd = [
-        "python", "train.py",
-        "--model", req.model
-    ]
-    if req.model == "random_forest":
-        cmd += ["--n_estimators", str(req.n_estimators)]
-    if req.model == "knn":
-        cmd += ["--n_neighbors", str(req.n_neighbors)]
-    # On passe la variable d'env pour que le sous‑processus parle à MLflow
-    env = os.environ.copy()
-    env["MLFLOW_TRACKING_URI"] = env.get("MLFLOW_TRACKING_URI", "http://mlflow:5000")
-    subprocess.Popen(cmd, env=env)
-    return {"status": "started", "run_id": run_id, "cmd": " ".join(cmd)}
-
+# ------------------- UTILS -------------------
 class PredictRequest(BaseModel):
     sepal_length: float
     sepal_width: float
     petal_length: float
     petal_width: float
 
+
+class TrainRequest(BaseModel):
+    model: str  # random_forest | logistic_regression | knn
+    n_estimators: Optional[int] = None
+    n_neighbors: Optional[int] = None
+
+
+def get_experiment_id(name: str):
+    client = mlflow.tracking.MlflowClient()
+    exp = client.get_experiment_by_name(name)
+    return exp.experiment_id if exp else None
+
+
+def get_latest_model_uri(experiment_name: str):
+    exp_id = get_experiment_id(experiment_name)
+    if not exp_id:
+        return None
+    client = mlflow.tracking.MlflowClient()
+    runs = client.search_runs(
+        experiment_ids=[exp_id],
+        filter_string="attributes.status = 'FINISHED'",
+        order_by=["start_time DESC"],
+        max_results=1
+    )
+    if not runs:
+        return None
+    return f"runs:/{runs[0].info.run_id}/model"
+
+
+def load_model():
+    global _cached_model
+    if _cached_model is not None:
+        return _cached_model
+    experiment_name = os.getenv("MLFLOW_EXPERIMENT_NAME", "mlops_iris_random_forest")
+    model_uri = get_latest_model_uri(experiment_name)
+    if model_uri:
+        _cached_model = mlflow.sklearn.load_model(model_uri)
+    return _cached_model
+
+
+# ------------------- ENDPOINTS -------------------
+@app.get("/")
+def root():
+    return {"message": "Welcome to the Iris MLOps API 🚀"}
+
+
+@app.get("/confusion_matrix")
+def confusion_matrix():
+    if os.path.exists("confusion_matrix.png"):
+        return FileResponse("confusion_matrix.png", media_type="image/png")
+    return {"error": "Fichier non trouvé. Lancez /train pour générer le modèle."}
+
+
+@app.post("/train")
+def train(req: TrainRequest):
+    run_id = str(uuid.uuid4())[:8]
+    cmd = ["python", "train.py", "--model", req.model]
+
+    if req.model == "random_forest" and req.n_estimators:
+        cmd += ["--n_estimators", str(req.n_estimators)]
+    if req.model == "knn" and req.n_neighbors:
+        cmd += ["--n_neighbors", str(req.n_neighbors)]
+
+    env = os.environ.copy()
+    env["MLFLOW_TRACKING_URI"] = env.get("MLFLOW_TRACKING_URI", "http://mlflow:5000")
+
+    subprocess.Popen(cmd, env=env)
+
+    return {"status": "training started", "cmd": " ".join(cmd), "run_id": run_id}
+
+
 @app.post("/predict")
-def predict(inp: PredictRequest):
-    # Exemple de chargement d'un modèle simple (joblib, pas MLflow ici pour l'instant)
-    model_path = "app/model.joblib"
-    if not os.path.exists(model_path):
-        return {"error": "Modèle non entraîné encore. Lancez d'abord /train."}
+def predict(input_data: PredictRequest):
+    model = load_model()
+    if model is None:
+        return {"error": "Aucun modèle chargé. Lancez d'abord /train."}
 
-    model = joblib.load(model_path)
-
-    input_array = np.array([[inp.sepal_length, inp.sepal_width, inp.petal_length, inp.petal_width]])
-    prediction = model.predict(input_array)[0]
-
-    # Classes names
+    data = np.array([[input_data.sepal_length, input_data.sepal_width,
+                      input_data.petal_length, input_data.petal_width]])
+    prediction = model.predict(data)[0]
     class_names = ["setosa", "versicolor", "virginica"]
 
     return {

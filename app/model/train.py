@@ -1,7 +1,7 @@
 # Tarik ZOUBIR 
 # For testing full MLOPS process
 import argparse
-import joblib
+#import joblib
 import mlflow
 import os
 import mlflow.sklearn
@@ -83,12 +83,12 @@ def main():
 
         # Log model
         mlflow.sklearn.log_model(model, "model")
-        print(f"Done : {args.model}")
+        print(f"Training done: {args.model}, metrics: {metrics}")
 
         # Save local model for API
-        joblib.dump(model, "app/model.joblib")
-        print(f"Model saved and metrics: {metrics}")
-
+        #joblib.dump(model, "app/model.joblib")
+        #print(f"Model saved and metrics: {metrics}")
+        
         # Log confusion matrix as artifact
         ConfusionMatrixDisplay.from_estimator(model, X_test, y_test)
         plt.savefig("confusion_matrix.png")
