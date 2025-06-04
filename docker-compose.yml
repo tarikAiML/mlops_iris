@@ -17,7 +17,6 @@ services:
   mlflow:
     build:
       context: .
-      dockerfile: docker/Dockerfile
     restart: unless-stopped
     depends_on:
       - postgres
@@ -36,7 +35,6 @@ services:
   api:
     build:
       context: .
-      dockerfile: docker/Dockerfile
     restart: unless-stopped
     depends_on:
       - mlflow
@@ -52,7 +50,6 @@ services:
   streamlit:
     build:
       context: .
-      dockerfile: docker/Dockerfile
     restart: unless-stopped
     depends_on:
       - api

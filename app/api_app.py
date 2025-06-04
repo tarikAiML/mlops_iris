@@ -12,6 +12,10 @@ app = FastAPI(title="IRIS API")
 instrumentator = Instrumentator()
 instrumentator.instrument(app).expose(app)
 
+@app.get("/")
+async def root():
+    return {"message": "Hello Iris MLOps!"}
+
 class TrainRequest(BaseModel):
     model: str       # RandomForest | LogisticRegression | Knn
     n_estimators: int  | None = None   # ignoré hors RandomForest
