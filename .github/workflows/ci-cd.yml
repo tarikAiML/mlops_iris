@@ -42,8 +42,13 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           script: |
-            cd /home/azureuser/mlops_iris
+            echo "Navigating to project directory"
+            cd /home/azureuser/mlops_iris || exit 1
+            echo "Stopping containers"
             sudo docker-compose down
+            echo "Pulling latest images"
             sudo docker-compose pull
+            echo "Cleaning up unused images"
             sudo docker image prune -f
+            echo "Starting containers"
             sudo docker-compose up -d
