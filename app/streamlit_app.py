@@ -11,7 +11,7 @@ st.set_page_config(page_title="Prédiction IRIS", page_icon="🌸")
 st.title("🌸 Prédiction de fleur IRIS (MLOps Demo)")
 st.markdown(
     "Lancez des entraînements MLflow et observez‑les en temps réel dans "
-    "[MLflow UI](http://4.204.42.233:5000).")
+    "[MLflow UI](http://20.151.96.60:5000).")
 
 # ---------- Onglets Streamlit ----------
 tab_train, tab_predict = st.tabs(["🧠 Entraînement", "🔮 Prédiction"])

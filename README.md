@@ -11,6 +11,7 @@ Ce projet est une démonstration complète d’un pipeline **MLOps** avec le dat
 - Exposer une API avec FastAPI pour entraîner ou prédire
 - Fournir une interface utilisateur avec Streamlit
 - Conteneuriser le tout avec Docker Compose
+- Monitorer les performances de l’API avec Prometheus et Grafana
 
 ---
 
@@ -25,6 +26,7 @@ Ce projet est une démonstration complète d’un pipeline **MLOps** avec le dat
 ├── docker/
 │ └── Dockerfile            # Unique Dockerfile pour tous les services Python
 ├── docker-compose.yml
+├── prometheus.yml          # Config de Prometheus pour scrapper FastAP
 ├── mlruns/                 # Artéfacts MLflow (param, metrics, model)
 ├── confusion_matrix.png    # Image sauvegardée par MLflow
 └── README.md
@@ -34,17 +36,21 @@ Ce projet est une démonstration complète d’un pipeline **MLOps** avec le dat
     docker-compose up --build
 Cela démarre :
 
-PostgreSQL (pour MLflow)
+PostgreSQL (pour MLflow)                                    # Base de données pour MLflow
 
-- MLflow Tracking Server sur http://localhost:5000
+- MLflow Tracking Server sur http://localhost:5000          # UI de tracking MLflow
 
-- FastAPI sur http://localhost:8000
+- FastAPI sur http://localhost:8000                         # API REST d’entraînement / prédiction
 
-- Streamlit sur http://localhost:8501
+- Streamlit sur http://localhost:8501                   # Interface utilisateur pour entraîner/prédire
 
-- pgAdmin sur http://localhost:8080
+- pgAdmin sur http://localhost:8080                         # Interface PostgreSQL
 
-- Portainer (gestion Docker) sur http://localhost:9000
+- Portainer (gestion Docker) sur http://localhost:9000      # Gestion Docker visuelle
+
+- Prometheus sur http://localhost:9090                      # Scrapping métriques API (/metrics)
+
+- Grafana  sur http://localhost:3000                        # Dashboard de visualisation des métriques
 
 ## 🚀 Utilisation
 
@@ -67,6 +73,15 @@ POST /train — Lancer un entraînement
 
 POST /predict — Faire une prédiction simple
 
+Accès à la doc automatique via Swagger : http://localhost:8000/docs
+
+## 📊 Monitoring avec Prometheus et Grafana
+L’endpoint /metrics de FastAPI expose des métriques Prometheus (latence, nombre de requêtes, etc.).
+
+Prometheus scrappe périodiquement cet endpoint
+
+Grafana permet de visualiser ces métriques via des dashboards personnalisés
+
 ## 🧪 Tech Stack
 
 Python 3.11
@@ -84,6 +99,10 @@ Docker & Docker Compose
 PostgreSQL
 
 pgAdmin & Portainer
+
+Prometheus
+
+Grafana
 
 📌 Auteur
 👤 Tarik ZOUBIR — Projet démonstration MLOps pour Iris Dataset
