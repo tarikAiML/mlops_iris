@@ -21,9 +21,11 @@ def get_experiment_id(name: str):
     return exp.experiment_id if exp else None
 
 def load_latest_metrics(experiment_name="mlops_iris_random_forest"):
+    print("➡️ Chargement des métriques depuis MLflow...")
     client = mlflow.tracking.MlflowClient()
     exp_id = get_experiment_id(experiment_name)
     if not exp_id:
+        print("❌ Aucun experiment trouvé")
         return
 
     runs = client.search_runs(
@@ -33,13 +35,17 @@ def load_latest_metrics(experiment_name="mlops_iris_random_forest"):
         max_results=1
     )
     if not runs:
+        print("❌ Aucun run terminé trouvé")
         return
 
     metrics = runs[0].data.metrics
+    print(f"✅ Métriques récupérées : {metrics}")
+
     if "Accuracy" in metrics:
         accuracy_gauge.set(metrics["Accuracy"])
     if "F1" in metrics:
         f1_score_gauge.set(metrics["F1"])
+
 
 # Instrumentator Prometheus avec hook pour mettre à jour les metrics avant chaque scrape
 instrumentator = Instrumentator()
