@@ -15,10 +15,53 @@ app = FastAPI(title="IRIS API")
 accuracy_gauge = Gauge("iris_model_accuracy", "Accuracy of the Iris model")
 f1_score_gauge = Gauge("iris_model_f1_score", "F1 Score of the Iris model")
 
+# Prometheus instrumentateur
+instrumentator = Instrumentator().instrument(app).expose(app)
+
+# Variables globales
+_cached_model = None
+
+# ------------------- UTILS -------------------
+class PredictRequest(BaseModel):
+    sepal_length: float
+    sepal_width: float
+    petal_length: float
+    petal_width: float
+
+class TrainRequest(BaseModel):
+    model: str  # random_forest | logistic_regression | knn
+    n_estimators: Optional[int] = None
+    n_neighbors: Optional[int] = None
+
 def get_experiment_id(name: str):
     client = mlflow.tracking.MlflowClient()
     exp = client.get_experiment_by_name(name)
     return exp.experiment_id if exp else None
+
+def get_latest_model_uri(experiment_name: str):
+    exp_id = get_experiment_id(experiment_name)
+    if not exp_id:
+        return None
+    client = mlflow.tracking.MlflowClient()
+    runs = client.search_runs(
+        experiment_ids=[exp_id],
+        filter_string="attributes.status = 'FINISHED'",
+        order_by=["start_time DESC"],
+        max_results=1
+    )
+    if not runs:
+        return None
+    return f"runs:/{runs[0].info.run_id}/model"
+
+def load_model():
+    global _cached_model
+    if _cached_model is not None:
+        return _cached_model
+    experiment_name = os.getenv("MLFLOW_EXPERIMENT_NAME", "mlops_iris_random_forest")
+    model_uri = get_latest_model_uri(experiment_name)
+    if model_uri:
+        _cached_model = mlflow.sklearn.load_model(model_uri)
+    return _cached_model
 
 def load_latest_metrics(experiment_name="mlops_iris_random_forest"):
     print("➡️ Chargement des métriques depuis MLflow...")
@@ -47,62 +90,10 @@ def load_latest_metrics(experiment_name="mlops_iris_random_forest"):
         f1_score_gauge.set(metrics["F1"])
 
 
-# Instrumentator Prometheus avec hook pour mettre à jour les metrics avant chaque scrape
-instrumentator = Instrumentator()
-
-@instrumentator.on_before_scrape
-def before_scrape():
-    load_latest_metrics()
-
-# Prometheus
-instrumentator.instrument(app).expose(app)
-
-# Variables globales
-_cached_model = None
-
-# ------------------- UTILS -------------------
-class PredictRequest(BaseModel):
-    sepal_length: float
-    sepal_width: float
-    petal_length: float
-    petal_width: float
-
-class TrainRequest(BaseModel):
-    model: str  # random_forest | logistic_regression | knn
-    n_estimators: Optional[int] = None
-    n_neighbors: Optional[int] = None
-
-def get_latest_model_uri(experiment_name: str):
-    exp_id = get_experiment_id(experiment_name)
-    if not exp_id:
-        return None
-    client = mlflow.tracking.MlflowClient()
-    runs = client.search_runs(
-        experiment_ids=[exp_id],
-        filter_string="attributes.status = 'FINISHED'",
-        order_by=["start_time DESC"],
-        max_results=1
-    )
-    if not runs:
-        return None
-    return f"runs:/{runs[0].info.run_id}/model"
-
-def load_model():
-    global _cached_model
-    if _cached_model is not None:
-        return _cached_model
-    experiment_name = os.getenv("MLFLOW_EXPERIMENT_NAME", "mlops_iris_random_forest")
-    model_uri = get_latest_model_uri(experiment_name)
-    if model_uri:
-        _cached_model = mlflow.sklearn.load_model(model_uri)
-    return _cached_model
-
-
 # ------------------- ENDPOINTS -------------------
 @app.get("/")
 def root():
     return {"message": "Welcome to the Iris MLOps API 🚀"}
-
 
 @app.get("/confusion_matrix")
 def confusion_matrix():
@@ -110,6 +101,10 @@ def confusion_matrix():
         return FileResponse("confusion_matrix.png", media_type="image/png")
     return {"error": "Fichier non trouvé. Lancez /train pour générer le modèle."}
 
+@app.get("/metrics/update")
+def update_metrics():
+    load_latest_metrics()
+    return {"status": "metrics updated"}
 
 @app.post("/train")
 def train(req: TrainRequest):
@@ -128,9 +123,9 @@ def train(req: TrainRequest):
 
     return {"status": "training started", "cmd": " ".join(cmd), "run_id": run_id}
 
-
 @app.post("/predict")
 def predict(input_data: PredictRequest):
+    load_latest_metrics()  # facultatif : met à jour les métriques à chaque prédiction
     model = load_model()
     if model is None:
         return {"error": "Aucun modèle chargé. Lancez d'abord /train."}
