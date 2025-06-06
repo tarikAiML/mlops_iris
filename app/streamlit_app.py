@@ -71,7 +71,7 @@ with tab_predict:
             species = res.json()["species"]
             st.success(f"🌺 Prédit : **{species}** (classe {prediction})")
         else:
-            st.error(res.json().get("error", "Erreur inconnue lors de la prédiction."))
+            st.error(res.json().get("error", "Erreurs inconnues lors de la prédiction."))
 
     #if os.path.exists("confusion_matrix.png"):
         #st.image("confusion_matrix.png", caption="Confusion Matrix", use_column_width=True)
