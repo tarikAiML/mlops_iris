@@ -9,6 +9,17 @@ import mlflow
 import mlflow.sklearn
 from typing import Optional
 
+app = FastAPI(title="IRIS API")
+
+# Prometheus metrics personnalisées
+accuracy_gauge = Gauge("iris_model_accuracy", "Accuracy of the Iris model")
+f1_score_gauge = Gauge("iris_model_f1_score", "F1 Score of the Iris model")
+
+def get_experiment_id(name: str):
+    client = mlflow.tracking.MlflowClient()
+    exp = client.get_experiment_by_name(name)
+    return exp.experiment_id if exp else None
+
 def load_latest_metrics(experiment_name="mlops_iris_random_forest"):
     client = mlflow.tracking.MlflowClient()
     exp_id = get_experiment_id(experiment_name)
@@ -30,21 +41,18 @@ def load_latest_metrics(experiment_name="mlops_iris_random_forest"):
     if "f1_score" in metrics:
         f1_score_gauge.set(metrics["f1_score"])
 
-app = FastAPI(title="IRIS API")
+# Instrumentator Prometheus avec hook pour mettre à jour les metrics avant chaque scrape
+instrumentator = Instrumentator()
+
+@instrumentator.on_before_scrape
+def before_scrape():
+    load_latest_metrics()
 
 # Prometheus
 Instrumentator().instrument(app).expose(app)
-# Charger les dernières métriques connues depuis MLflow
-load_latest_metrics()
-
 
 # Variables globales
 _cached_model = None
-# Prometheus metrics personnalisées
-accuracy_gauge = Gauge("iris_model_accuracy", "Accuracy of the Iris model")
-f1_score_gauge = Gauge("iris_model_f1_score", "F1 Score of the Iris model")
-
-
 
 # ------------------- UTILS -------------------
 class PredictRequest(BaseModel):
@@ -53,18 +61,10 @@ class PredictRequest(BaseModel):
     petal_length: float
     petal_width: float
 
-
 class TrainRequest(BaseModel):
     model: str  # random_forest | logistic_regression | knn
     n_estimators: Optional[int] = None
     n_neighbors: Optional[int] = None
-
-
-def get_experiment_id(name: str):
-    client = mlflow.tracking.MlflowClient()
-    exp = client.get_experiment_by_name(name)
-    return exp.experiment_id if exp else None
-
 
 def get_latest_model_uri(experiment_name: str):
     exp_id = get_experiment_id(experiment_name)
