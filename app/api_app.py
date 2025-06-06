@@ -2,20 +2,48 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from prometheus_fastapi_instrumentator import Instrumentator
-
+from prometheus_client import Gauge
 import os, subprocess, uuid
 import numpy as np
 import mlflow
 import mlflow.sklearn
 from typing import Optional
 
+def load_latest_metrics(experiment_name="mlops_iris_random_forest"):
+    client = mlflow.tracking.MlflowClient()
+    exp_id = get_experiment_id(experiment_name)
+    if not exp_id:
+        return
+
+    runs = client.search_runs(
+        experiment_ids=[exp_id],
+        filter_string="attributes.status = 'FINISHED'",
+        order_by=["start_time DESC"],
+        max_results=1
+    )
+    if not runs:
+        return
+
+    metrics = runs[0].data.metrics
+    if "accuracy" in metrics:
+        accuracy_gauge.set(metrics["accuracy"])
+    if "f1_score" in metrics:
+        f1_score_gauge.set(metrics["f1_score"])
+
 app = FastAPI(title="IRIS API")
 
 # Prometheus
 Instrumentator().instrument(app).expose(app)
+# Charger les dernières métriques connues depuis MLflow
+load_latest_metrics()
+
 
 # Variables globales
 _cached_model = None
+# Prometheus metrics personnalisées
+accuracy_gauge = Gauge("iris_model_accuracy", "Accuracy of the Iris model")
+f1_score_gauge = Gauge("iris_model_f1_score", "F1 Score of the Iris model")
+
 
 
 # ------------------- UTILS -------------------
@@ -52,7 +80,6 @@ def get_latest_model_uri(experiment_name: str):
     if not runs:
         return None
     return f"runs:/{runs[0].info.run_id}/model"
-
 
 def load_model():
     global _cached_model

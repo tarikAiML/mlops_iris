@@ -9,3 +9,4 @@ streamlit
 psycopg2-binary
 joblib
 prometheus-fastapi-instrumentator
+prometheus_client
