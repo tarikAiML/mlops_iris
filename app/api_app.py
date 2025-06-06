@@ -36,10 +36,10 @@ def load_latest_metrics(experiment_name="mlops_iris_random_forest"):
         return
 
     metrics = runs[0].data.metrics
-    if "accuracy" in metrics:
-        accuracy_gauge.set(metrics["accuracy"])
-    if "f1_score" in metrics:
-        f1_score_gauge.set(metrics["f1_score"])
+    if "Accuracy" in metrics:
+        accuracy_gauge.set(metrics["Accuracy"])
+    if "F1" in metrics:
+        f1_score_gauge.set(metrics["F1"])
 
 # Instrumentator Prometheus avec hook pour mettre à jour les metrics avant chaque scrape
 instrumentator = Instrumentator()
@@ -49,7 +49,7 @@ def before_scrape():
     load_latest_metrics()
 
 # Prometheus
-Instrumentator().instrument(app).expose(app)
+instrumentator.instrument(app).expose(app)
 
 # Variables globales
 _cached_model = None

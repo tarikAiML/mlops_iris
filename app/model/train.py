@@ -46,10 +46,10 @@ def train_model(args, X_train, y_train):
 def evaluate_model(model, X_test, y_test):
     preds = model.predict(X_test)
     metrics = {
-        "accuracy": accuracy_score(y_test, preds),
-        "precision": precision_score(y_test, preds, average="weighted"),
-        "recall": recall_score(y_test, preds, average="weighted"),
-        "f1": f1_score(y_test, preds, average="weighted"),
+        "Accuracy": accuracy_score(y_test, preds),
+        "Precision": precision_score(y_test, preds, average="weighted"),
+        "Recall": recall_score(y_test, preds, average="weighted"),
+        "F1": f1_score(y_test, preds, average="weighted"),
     }
     return metrics
 
