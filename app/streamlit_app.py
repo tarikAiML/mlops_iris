@@ -77,7 +77,7 @@ with tab_predict:
         #st.image("confusion_matrix.png", caption="Confusion Matrix", use_column_width=True)
     res = requests.get(f"{API_URL}/confusion_matrix")
     if res.status_code == 200 and res.headers.get("Content-Type") == "image/png":
-        st.image(res.content, caption="Matrice de confusion", use_column_width=True)
+        st.image(res.content, caption="Matrice de confusion", use_container_width=True)
     else:
         st.warning("Matrice de confusion non disponible. Lancez un entraînement.")
 
