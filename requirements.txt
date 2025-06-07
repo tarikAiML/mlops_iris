@@ -7,6 +7,6 @@ uvicorn
 fastapi
 streamlit
 psycopg2-binary
-joblib
+# joblib  Je l'utilise plus dans cette version du projet
 prometheus-fastapi-instrumentator
 prometheus_client

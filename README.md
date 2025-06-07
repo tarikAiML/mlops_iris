@@ -104,6 +104,23 @@ Prometheus
 
 Grafana
 
+## 📦 Versions des dépendances pour plus de précision (optionnel)
+
+| Package             | Version     |
+|---------------------|-------------|
+| Python              | 3.11        |
+| FastAPI             | 0.110.0     |
+| Uvicorn             | 0.29.0      |
+| scikit-learn        | 1.4.2       |
+| pandas              | 2.2.2       |
+| numpy               | 1.26.4      |
+| streamlit           | 1.35.0      |
+| prometheus-client   | 0.20.0      |
+| requests            | 2.31.0      |
+| mlflow              | 2.12.1      |
+|prometheus-fastapi-instrumentator==6.1.0  # Intégration Prometheus avec FastAPI
+
+
 📌 Auteur
 👤 Tarik ZOUBIR — Projet démonstration MLOps pour Iris Dataset
 

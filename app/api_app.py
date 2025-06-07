@@ -33,11 +33,13 @@ class TrainRequest(BaseModel):
     n_estimators: Optional[int] = None
     n_neighbors: Optional[int] = None
 
+# Function get experiment from mlflow
 def get_experiment_id(name: str):
     client = mlflow.tracking.MlflowClient()
     exp = client.get_experiment_by_name(name)
     return exp.experiment_id if exp else None
 
+# Function get latest model
 def get_latest_model_uri(experiment_name: str):
     exp_id = get_experiment_id(experiment_name)
     if not exp_id:
@@ -53,6 +55,8 @@ def get_latest_model_uri(experiment_name: str):
         return None
     return f"runs:/{runs[0].info.run_id}/model"
 
+# Function for loading the model 
+# In this function i use random_forest model
 def load_model():
     global _cached_model
     if _cached_model is not None:
@@ -63,6 +67,7 @@ def load_model():
         _cached_model = mlflow.sklearn.load_model(model_uri)
     return _cached_model
 
+# Function for loading metrics for Prometheus (exploration)
 def load_latest_metrics(experiment_name="mlops_iris_random_forest"):
     print("➡️ Chargement des métriques depuis MLflow...")
     client = mlflow.tracking.MlflowClient()

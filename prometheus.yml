@@ -1,8 +1,8 @@
 global:
-  scrape_interval: 15s
+  scrape_interval: 15s        # Intervalle global pour collecter les métriques de tous les jobs (toutes les 15 secondes)
 
 scrape_configs:
-  - job_name: 'fastapi-app'
-    metrics_path: /metrics
+  - job_name: 'fastapi-app'   # Nom du job, utilisé comme label dans Prometheus et Grafana
+    metrics_path: /metrics    # Chemin sur lequel les métriques sont exposées
     static_configs:
-      - targets: ['api:8000']
+      - targets: ['api:8000'] # Cible à interroger, ici 'api' est le nom du container dans Docker Compose (FastAPI)
